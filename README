@@ -1,0 +1,11 @@
+You can run this on Arduino UNO / ESP32 with:
+
+2 DC motors for land wheels
+
+2 DC motors or 1 servo thruster for water propulsion
+
+Motor driver L298N or L293D
+
+Ultrasonic sensor (for obstacle detection)
+
+Optional: buoyancy sensor / water detection sensor
