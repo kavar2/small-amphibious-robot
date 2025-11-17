@@ -1,0 +1,143 @@
+/***********************************************************************
+   AMPHIBIOUS ROBOT (EDUCATIONAL ONLY)
+   Features:
+    - Drives on land using 2 DC motors
+    - Drives in water using 2 water propellers (or 1)
+    - Automatic mode: detects land/water and switches motors
+    - Obstacle avoidance using ultrasonic sensor
+
+   Hardware:
+    - Arduino UNO / ESP32
+    - L298N motor driver
+    - 2 land motors  (M1, M2)
+    - 2 water props  (W1, W2)
+    - HC-SR04 ultrasonic sensor
+    - Water-level sensor (digital)
+
+************************************************************************/
+
+// --------- MOTOR PINS --------------
+#define M1_IN1 5
+#define M1_IN2 6
+#define M2_IN1 9
+#define M2_IN2 10
+
+#define W1 3    // Water motor 1
+#define W2 11   // Water motor 2
+
+// --------- SENSORS -----------------
+#define TRIG 8
+#define ECHO 7
+#define WATER_SENSOR A0   // analog 0
+
+// --------- SETTINGS ----------------
+int waterThreshold = 400;  // > this = in water
+
+// -----------------------------------
+void setup() {
+  Serial.begin(9600);
+
+  pinMode(M1_IN1, OUTPUT);
+  pinMode(M1_IN2, OUTPUT);
+  pinMode(M2_IN1, OUTPUT);
+  pinMode(M2_IN2, OUTPUT);
+
+  pinMode(W1, OUTPUT);
+  pinMode(W2, OUTPUT);
+
+  pinMode(TRIG, OUTPUT);
+  pinMode(ECHO, INPUT);
+
+  pinMode(WATER_SENSOR, INPUT);
+
+  stopAll();
+  Serial.println("Amphibious Robot Ready!");
+}
+
+// -----------------------------------
+void loop() {
+
+  bool inWater = readWaterSensor();
+  int distance = readDistance();
+
+  Serial.print("Water: "); Serial.print(inWater);
+  Serial.print("  Distance: "); Serial.println(distance);
+
+  if (distance < 20) {
+    stopAll();
+    delay(300);
+    reverseLand();
+    delay(500);
+    stopAll();
+    delay(300);
+    return;
+  }
+
+  if (inWater) {
+    moveInWater();
+  } else {
+    moveOnLand();
+  }
+}
+
+// ------------- LAND MODE --------------
+void moveOnLand() {
+  analogWrite(M1_IN1, 180);
+  analogWrite(M1_IN2, 0);
+  analogWrite(M2_IN1, 180);
+  analogWrite(M2_IN2, 0);
+
+  stopWaterMotors();
+}
+
+// ------------- REVERSE ---------------
+void reverseLand() {
+  analogWrite(M1_IN1, 0);
+  analogWrite(M1_IN2, 180);
+  analogWrite(M2_IN1, 0);
+  analogWrite(M2_IN2, 180);
+}
+
+// ------------- WATER MODE ------------
+void moveInWater() {
+  analogWrite(W1, 200);
+  analogWrite(W2, 200);
+
+  stopLandMotors();
+}
+
+// ------------- STOP ALL --------------
+void stopAll() {
+  stopLandMotors();
+  stopWaterMotors();
+}
+
+// -------------- SUB-FUNCTIONS --------
+void stopLandMotors() {
+  analogWrite(M1_IN1, 0);
+  analogWrite(M1_IN2, 0);
+  analogWrite(M2_IN1, 0);
+  analogWrite(M2_IN2, 0);
+}
+
+void stopWaterMotors() {
+  analogWrite(W1, 0);
+  analogWrite(W2, 0);
+}
+
+bool readWaterSensor() {
+  int val = analogRead(WATER_SENSOR);
+  return (val > waterThreshold);
+}
+
+int readDistance() {
+  digitalWrite(TRIG, LOW);
+  delayMicroseconds(5);
+  digitalWrite(TRIG, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG, LOW);
+
+  long duration = pulseIn(ECHO, HIGH);
+  int distance = duration * 0.034 / 2;
+  return distance;
+}
